@@ -112,3 +112,7 @@ func (c *Consumer) Run() {
 		}
 	}
 }
+
+func (c *Consumer) Start() {
+	go c.Run()
+}
