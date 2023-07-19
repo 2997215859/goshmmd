@@ -57,7 +57,7 @@ func CallbackTest(p unsafe.Pointer, dataType uint64) {
 }
 
 func TestMDConsumer(t *testing.T) {
-	consumer, err := New("/mnt/huge/ha", WithCallback(CallbackTest), WithStart(0))
+	consumer, err := New("/mnt/huge/ha", WithCallback(CallbackTest))
 	if err != nil {
 		t.Errorf("error: %s", err)
 	}
@@ -65,7 +65,7 @@ func TestMDConsumer(t *testing.T) {
 }
 
 func TestOTConsumer(t *testing.T) {
-	consumer, err := New("/mnt/huge/ha_order_transaction", WithCallback(CallbackTest), WithStart(0))
+	consumer, err := New("/mnt/huge/ha_order_transaction", WithCallback(CallbackTest))
 	if err != nil {
 		t.Errorf("error: %s", err)
 	}

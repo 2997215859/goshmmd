@@ -23,7 +23,7 @@ type Consumer struct {
 }
 
 func New(filepath string, opts ...Option) (*Consumer, error) {
-	filePaths := strings.Split(filepath, ",")
+	filePaths := strings.Split(filepath, ";")
 	consumer := &Consumer{
 		filePaths:  filePaths,
 		startIndex: DefaultConsumerStartIndex,

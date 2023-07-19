@@ -105,7 +105,7 @@ func CopyMarketData(src *raw.MarketData) *MarketData {
 		UpperLimitPrice:    src.UpperLimitPrice,
 		LowerLimitPrice:    src.LowerLimitPrice,
 		Iopv:               src.Iopv,
-		TurnNum:            src.TurnNum,
+		TurnNum:            turnNum,
 	}
 
 	return dst
