@@ -46,8 +46,7 @@ func (buffer *Buffer) GetNextAddrNoBlock(index *uint64) unsafe.Pointer {
 		*index = endIndex
 		return nil
 	}
-	b := uintptr(unsafe.Pointer(&buffer.buffer))
-	b = b + uintptr((*index&buffer.mask)*buffer.eachSize)
+	b := uintptr(unsafe.Pointer(&buffer.buffer)) + uintptr((*index&buffer.mask)*buffer.eachSize)
 	p := unsafe.Pointer(&b)
 	*index = *index + 1
 	//md := *(**MarketData)(unsafe.Pointer(&b))
