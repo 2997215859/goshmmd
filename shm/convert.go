@@ -6,8 +6,8 @@ import (
 
 // 处理正常类型
 
-func GetMarketData(data unsafe.Pointer) *MarketData {
-	return *(**MarketData)(data)
+func GetSnapshot(data unsafe.Pointer) *Snapshot {
+	return *(**Snapshot)(data)
 }
 
 func GetOrder(data unsafe.Pointer) *Order {

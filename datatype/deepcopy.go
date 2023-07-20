@@ -1,4 +1,4 @@
-package md
+package datatype
 
 import (
 	"gitlab-dev.qxinvest.com/gomd/md/shm"
@@ -34,7 +34,7 @@ func RemoveNan(arr []float64) {
 
 // md 的自定义序列化
 
-func CopyMarketData(src *shm.MarketData) *MarketData {
+func CopySnapshot(src *shm.Snapshot) *Snapshot {
 	askPrice := src.AskPrice
 	RemoveNan(askPrice[:])
 
@@ -72,7 +72,7 @@ func CopyMarketData(src *shm.MarketData) *MarketData {
 		turnNum = 0
 	}
 
-	dst := &MarketData{
+	dst := &Snapshot{
 		RecordCircle:       src.RecordCircle,
 		ExchangeTime:       src.ExchangeTime,
 		TimestampS:         src.TimestampS,

@@ -1,11 +1,11 @@
-package md
+package datatype
 
 const (
-	TypeMarketData            = 0
+	TypeSnapshot              = 0
 	TypeOrder                 = 1
 	TypeTransaction           = 2
 	TypeOrderTransaction      = 10
-	TypeMarketDataExtra       = 11
+	TypeSnapshotExtra         = 11
 	TypeOrderExtra            = 12
 	TypeTransactionExtra      = 13
 	TypeOrderTransactionExtra = 14
@@ -13,7 +13,7 @@ const (
 
 // 正常类型
 
-type MarketData struct {
+type Snapshot struct {
 	RecordCircle       uint64
 	ExchangeTime       int64
 	TimestampS         int64

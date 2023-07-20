@@ -3,24 +3,47 @@ package shmconsumer
 import (
 	"bytes"
 	"fmt"
+	"gitlab-dev.qxinvest.com/gomd/md/datatype"
 	"gitlab-dev.qxinvest.com/gomd/md/shm"
-	"os"
 	"strings"
-	"syscall"
+	"sync"
 	"unsafe"
 )
+
+const DefaultBufferSize = 10000000
+
+type Pointer struct {
+	pointer  unsafe.Pointer
+	dataType uint64
+}
 
 type Consumer struct {
 	// config
 	filePaths       []string
 	startIndex      uint64
 	startIndexGroup []uint64 // 用于处理多个 buffer 的情况
+	bufferSize      uint64
 
 	// data 一个 filepath 可能对应多个 bufferinfo; 每个 bufferInfo 对应一个 buffer
 	bufferInfoList []*shm.BufferInfo
 	bufferList     []*shm.Buffer
 	cursors        []uint64
-	callback       Callback
+
+	stopChan chan struct{}
+
+	callback                 Callback
+	snapshotCallback         SnapshotCallback
+	orderCallback            OrderCallback
+	transactionCallback      TransactionCallback
+	orderExtraCallback       OrderExtraCallback
+	transactionExtraCallback TransactionExtraCallback
+
+	allChannel              chan *Pointer
+	snapshotChannel         chan *datatype.Snapshot
+	orderChannel            chan *datatype.Order
+	transactionChannel      chan *datatype.Transaction
+	orderExtraChannel       chan *datatype.OrderExtra
+	transactionExtraChannel chan *datatype.TransactionExtra
 }
 
 func New(filepath string, opts ...Option) (*Consumer, error) {
@@ -28,6 +51,8 @@ func New(filepath string, opts ...Option) (*Consumer, error) {
 	consumer := &Consumer{
 		filePaths:  filePaths,
 		startIndex: DefaultConsumerStartIndex,
+		bufferSize: DefaultBufferSize,
+		stopChan:   make(chan struct{}),
 	}
 	for _, o := range opts {
 		o(consumer)
@@ -36,7 +61,7 @@ func New(filepath string, opts ...Option) (*Consumer, error) {
 	for _, filepath := range filePaths {
 		// 1. 映射 buffer 头信息
 		bufferHeaderSize := int(unsafe.Sizeof(shm.MDGatewayInfo{}))
-		b, err := Alloc(filepath, bufferHeaderSize)
+		b, err := shm.Alloc(filepath, bufferHeaderSize)
 		if err != nil {
 			return nil, err
 		}
@@ -62,7 +87,7 @@ func New(filepath string, opts ...Option) (*Consumer, error) {
 				return nil, fmt.Errorf("error: filepath(%s) buffer path is empty", filepath)
 			}
 
-			b, err = Alloc(bufferPath, int(unsafe.Sizeof(shm.Buffer{}))+int(bufferInfo.TotalSize))
+			b, err = shm.Alloc(bufferPath, int(unsafe.Sizeof(shm.Buffer{}))+int(bufferInfo.TotalSize))
 			if err != nil {
 				return nil, err
 			}
@@ -86,34 +111,192 @@ func New(filepath string, opts ...Option) (*Consumer, error) {
 	return consumer, nil
 }
 
-func Alloc(filepath string, size int) ([]byte, error) {
-	f, err := os.OpenFile(filepath, os.O_RDONLY, 0644)
-	if err != nil {
-		return nil, fmt.Errorf("filepath error: %s", err)
+func (c *Consumer) MDCallback() {
+	if c.callback != nil {
+		c.allChannel = make(chan *Pointer, c.bufferSize)
+		go func() {
+			for {
+				select {
+				case data := <-c.allChannel:
+					if c.callback != nil {
+						c.callback(data.pointer, data.dataType)
+					}
+				case <-c.stopChan:
+					return
+				}
+			}
+		}()
 	}
-	defer f.Close()
+	if c.snapshotCallback != nil {
+		c.snapshotChannel = make(chan *datatype.Snapshot, c.bufferSize)
+		go func() {
+			for {
+				select {
+				case snapshot := <-c.snapshotChannel:
+					if c.snapshotCallback != nil {
+						c.snapshotCallback(snapshot)
+					}
+				case <-c.stopChan:
+					return
+				}
+			}
+		}()
+	}
+	if c.orderCallback != nil {
+		c.orderChannel = make(chan *datatype.Order, c.bufferSize)
+		go func() {
+			for {
+				select {
+				case order := <-c.orderChannel:
+					if c.orderCallback != nil {
+						c.orderCallback(order)
+					}
+				case <-c.stopChan:
+					return
+				}
+			}
+		}()
+	}
+	if c.transactionCallback != nil {
+		c.transactionChannel = make(chan *datatype.Transaction, c.bufferSize)
+		go func() {
+			for {
+				select {
+				case transaction := <-c.transactionChannel:
+					if c.transactionCallback != nil {
+						c.transactionCallback(transaction)
+					}
+				case <-c.stopChan:
+					return
+				}
+			}
+		}()
+	}
+	if c.orderExtraCallback != nil {
+		c.orderExtraChannel = make(chan *datatype.OrderExtra, c.bufferSize)
+		go func() {
+			for {
+				select {
+				case order := <-c.orderExtraChannel:
+					if c.orderExtraCallback != nil {
+						c.orderExtraCallback(order)
+					}
+				case <-c.stopChan:
+					return
+				}
+			}
+		}()
+	}
 
-	b, err := syscall.Mmap(int(f.Fd()), 0, size, syscall.PROT_READ, syscall.MAP_SHARED)
-	if err != nil {
-		return nil, fmt.Errorf("mmap(%s) size(%v) error: %s", filepath, size, err)
+	if c.transactionExtraCallback != nil {
+		c.transactionExtraChannel = make(chan *datatype.TransactionExtra, c.bufferSize)
+		go func() {
+			for {
+				select {
+				case transactionExtra := <-c.transactionExtraChannel:
+					if c.transactionExtraCallback != nil {
+						c.transactionExtraCallback(transactionExtra)
+					}
+				case <-c.stopChan:
+					return
+				}
+			}
+		}()
 	}
-	if b == nil {
-		return nil, fmt.Errorf("error: mmap(%s) data is nil", filepath)
-	}
-	return b, nil
 }
 
-func (c *Consumer) Run() {
-	for {
-		for idx, buffer := range c.bufferList {
-			datapoint := buffer.GetNextAddrNoBlock(&c.cursors[idx])
-			if datapoint != nil && c.callback != nil {
-				c.callback(datapoint, buffer.DataType)
+func (c *Consumer) ReadBuffer(buffer *shm.Buffer, currentIndex *uint64) {
+	datapoint := buffer.GetNextAddrNoBlock(currentIndex)
+	if datapoint == nil {
+		return
+	}
+
+	if c.callback != nil && c.allChannel != nil {
+		c.allChannel <- &Pointer{
+			pointer:  datapoint,
+			dataType: buffer.DataType,
+		}
+	}
+
+	switch buffer.DataType {
+	case datatype.TypeSnapshot:
+		snapshot := datatype.CopySnapshot(shm.GetSnapshot(datapoint))
+		if snapshot != nil && c.snapshotCallback != nil && c.snapshotChannel != nil {
+			c.snapshotChannel <- snapshot
+		}
+	case datatype.TypeOrder:
+		order := datatype.CopyOrder(shm.GetOrder(datapoint))
+		if order != nil && c.orderCallback != nil && c.orderChannel != nil {
+			c.orderChannel <- order
+		}
+	case datatype.TypeTransaction:
+		transaction := datatype.CopyTransaction(shm.GetTransaction(datapoint))
+		if transaction != nil && c.transactionCallback != nil && c.transactionChannel != nil {
+			c.transactionChannel <- transaction
+		}
+	case datatype.TypeOrderTransaction:
+		bufferType := shm.GetBufferType(datapoint)
+		switch bufferType {
+		case datatype.TypeOrder:
+			order := datatype.CopyOrder(shm.GetUnionOrder(datapoint))
+			if order != nil && c.orderCallback != nil && c.orderChannel != nil {
+				c.orderChannel <- order
+			}
+		case datatype.TypeTransaction:
+			transaction := datatype.CopyTransaction(shm.GetUnionTransaction(datapoint))
+			if transaction != nil && c.transactionCallback != nil && c.transactionChannel != nil {
+				c.transactionChannel <- transaction
+			}
+		}
+	case datatype.TypeOrderTransactionExtra:
+		bufferType := shm.GetBufferType(datapoint)
+		switch bufferType {
+		case datatype.TypeOrderExtra:
+			orderExtra := datatype.CopyOrderExtra(shm.GetUnionOrderExtra(datapoint))
+			if orderExtra != nil && c.orderExtraCallback != nil && c.orderExtraChannel != nil {
+				c.orderExtraChannel <- orderExtra
+			}
+		case datatype.TypeTransactionExtra:
+			transactionExtra := datatype.CopyTransactionExtra(shm.GetUnionTransactionExtra(datapoint))
+			if transactionExtra != nil && c.transactionExtraCallback != nil && c.transactionExtraChannel != nil {
+				c.transactionExtraChannel <- transactionExtra
 			}
 		}
 	}
 }
 
+func (c *Consumer) LoopBuffer(idx int, buffer *shm.Buffer) {
+	for {
+		select {
+		case <-c.stopChan:
+			return
+		default:
+			c.ReadBuffer(buffer, &c.cursors[idx])
+		}
+	}
+}
+
+func (c *Consumer) Run() {
+
+	c.MDCallback()
+
+	var wg sync.WaitGroup
+	wg.Add(len(c.bufferList))
+
+	for idx, buffer := range c.bufferList {
+		go func(idx int, buffer *shm.Buffer) {
+			c.LoopBuffer(idx, buffer)
+			wg.Done()
+		}(idx, buffer)
+	}
+
+	wg.Wait()
+}
+
 func (c *Consumer) Start() {
 	go c.Run()
+}
+
+func (c *Consumer) Stop() {
+	close(c.stopChan)
 }

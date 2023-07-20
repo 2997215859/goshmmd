@@ -2,7 +2,7 @@ package shm
 
 // 正常类型
 
-type MarketData struct {
+type Snapshot struct {
 	RecordCircle       uint64
 	ExchangeTime       int64
 	TimestampS         int64
