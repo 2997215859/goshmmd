@@ -23,6 +23,12 @@ func WithStart(startIndex uint64) Option {
 	}
 }
 
+func WithBufferSize(bufferSize uint64) Option {
+	return func(consumer *Consumer) {
+		consumer.bufferSize = bufferSize
+	}
+}
+
 func WithCallback(cb Callback) Option {
 	return func(consumer *Consumer) {
 		consumer.callback = cb
