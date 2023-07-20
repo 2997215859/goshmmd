@@ -1,5 +1,16 @@
 package md
 
+const (
+	TypeMarketData            = 0
+	TypeOrder                 = 1
+	TypeTransaction           = 2
+	TypeOrderTransaction      = 10
+	TypeMarketDataExtra       = 11
+	TypeOrderExtra            = 12
+	TypeTransactionExtra      = 13
+	TypeOrderTransactionExtra = 14
+)
+
 // 正常类型
 
 type MarketData struct {
