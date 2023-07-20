@@ -3,7 +3,8 @@ package shmconsumer
 import (
 	"encoding/json"
 	"fmt"
-	"gitlab-dev.qxinvest.com/gomd/shmconsumer/raw"
+	"gitlab-dev.qxinvest.com/gomd/md/shm"
+	"gitlab-dev.qxinvest.com/gomd/md/shmconsumer"
 	"testing"
 	"unsafe"
 )
@@ -13,38 +14,38 @@ var transCnt uint64 = 0
 
 func CallbackTest(p unsafe.Pointer, dataType uint64) {
 	switch dataType {
-	case raw.TypeMarketData:
-		md := CopyMarketData(raw.GetMarketData(p))
+	case shm.TypeMarketData:
+		md := CopyMarketData(shm.GetMarketData(p))
 		b, _ := json.Marshal(md)
 		fmt.Printf("market_data: %s\n", string(b))
-	case raw.TypeOrder:
-		order := CopyOrder(raw.GetOrder(p))
+	case shm.TypeOrder:
+		order := CopyOrder(shm.GetOrder(p))
 		fmt.Printf("order: %+v\n", order)
-	case raw.TypeTransaction:
-		transaction := CopyTransaction(raw.GetTransaction(p))
-		fmt.Printf("order: %+v\n", transaction)
-	case raw.TypeOrderTransaction:
-		bufferType := raw.GetBufferType(p)
+	case shm.TypeTransaction:
+		transaction := CopyTransaction(shm.GetTransaction(p))
+		fmt.Printf("transaction: %+v\n", transaction)
+	case shm.TypeOrderTransaction:
+		bufferType := shm.GetBufferType(p)
 		switch bufferType {
-		case raw.TypeOrder:
-			order := CopyOrder(raw.GetUnionOrder(p))
+		case shm.TypeOrder:
+			order := CopyOrder(shm.GetUnionOrder(p))
 			fmt.Printf("order_transaction.order: %+v, extraType: %+v, order: %+v\n", p, bufferType, order)
-		case raw.TypeTransaction:
-			transaction := CopyTransaction(raw.GetUnionTransaction(p))
+		case shm.TypeTransaction:
+			transaction := CopyTransaction(shm.GetUnionTransaction(p))
 			fmt.Printf("order_transaction.transaction: %+v, extraType: %+v, order: %+v\n", p, bufferType, transaction)
 		}
-	case raw.TypeOrderTransactionExtra:
-		bufferType := raw.GetBufferType(p)
+	case shm.TypeOrderTransactionExtra:
+		bufferType := shm.GetBufferType(p)
 		switch bufferType {
-		case raw.TypeOrderExtra:
-			orderExtra := CopyOrderExtra(raw.GetUnionOrderExtra(p))
+		case shm.TypeOrderExtra:
+			orderExtra := CopyOrderExtra(shm.GetUnionOrderExtra(p))
 			b, _ := json.Marshal(orderExtra)
 			orderCnt = orderCnt + 1
 			if orderCnt%10000 == 0 {
 				fmt.Printf("order_transaction_extra.order_extra: %+v, extraType: %+v, order_extra: %s\n", p, bufferType, string(b))
 			}
-		case raw.TypeTransactionExtra:
-			transactionExtra := CopyTransactionExtra(raw.GetUnionTransactionExtra(p))
+		case shm.TypeTransactionExtra:
+			transactionExtra := CopyTransactionExtra(shm.GetUnionTransactionExtra(p))
 			b, _ := json.Marshal(transactionExtra)
 			transCnt = transCnt + 1
 			if transCnt%10000 == 0 {
@@ -57,7 +58,7 @@ func CallbackTest(p unsafe.Pointer, dataType uint64) {
 }
 
 func TestMDConsumer(t *testing.T) {
-	consumer, err := New("/mnt/huge/ha", WithCallback(CallbackTest))
+	consumer, err := shmconsumer.New("/mnt/huge/ha", shmconsumer.WithCallback(CallbackTest))
 	if err != nil {
 		t.Errorf("error: %s", err)
 	}
@@ -65,7 +66,7 @@ func TestMDConsumer(t *testing.T) {
 }
 
 func TestOTConsumer(t *testing.T) {
-	consumer, err := New("/mnt/huge/ha_order_transaction", WithCallback(CallbackTest))
+	consumer, err := shmconsumer.New("/mnt/huge/ha_order_transaction", shmconsumer.WithCallback(CallbackTest))
 	if err != nil {
 		t.Errorf("error: %s", err)
 	}

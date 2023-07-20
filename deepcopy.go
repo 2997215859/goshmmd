@@ -1,7 +1,7 @@
 package shmconsumer
 
 import (
-	"gitlab-dev.qxinvest.com/gomd/shmconsumer/raw"
+	"gitlab-dev.qxinvest.com/gomd/md/shm"
 	"math"
 	"strings"
 )
@@ -34,7 +34,7 @@ func RemoveNan(arr []float64) {
 
 // md 的自定义序列化
 
-func CopyMarketData(src *raw.MarketData) *MarketData {
+func CopyMarketData(src *shm.MarketData) *MarketData {
 	askPrice := src.AskPrice
 	RemoveNan(askPrice[:])
 
@@ -113,7 +113,7 @@ func CopyMarketData(src *raw.MarketData) *MarketData {
 
 // order 的自定义序列化
 
-func CopyOrder(src *raw.Order) *Order {
+func CopyOrder(src *shm.Order) *Order {
 	dst := &Order{
 		Code:         src.Code,
 		LocalTime:    src.LocalTime,
@@ -130,7 +130,7 @@ func CopyOrder(src *raw.Order) *Order {
 	return dst
 }
 
-func CopyOrderExtra(src *raw.OrderExtra) *OrderExtra {
+func CopyOrderExtra(src *shm.OrderExtra) *OrderExtra {
 	dst := &OrderExtra{
 		Order:    CopyOrder(&src.Order),
 		OrderNo:  src.OrderNo,
@@ -141,7 +141,7 @@ func CopyOrderExtra(src *raw.OrderExtra) *OrderExtra {
 
 // transaction 的自定义序列化
 
-func CopyTransaction(src *raw.Transaction) *Transaction {
+func CopyTransaction(src *shm.Transaction) *Transaction {
 	dst := &Transaction{
 		Code:         src.Code,
 		LocalTime:    src.LocalTime,
@@ -164,7 +164,7 @@ func CopyTransaction(src *raw.Transaction) *Transaction {
 	return dst
 }
 
-func CopyTransactionExtra(src *raw.TransactionExtra) *TransactionExtra {
+func CopyTransactionExtra(src *shm.TransactionExtra) *TransactionExtra {
 	dst := &TransactionExtra{
 		Transaction: CopyTransaction(&src.Transaction),
 		BizIndex:    src.BizIndex,

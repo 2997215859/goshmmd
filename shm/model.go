@@ -1,4 +1,4 @@
-package raw
+package shm
 
 const (
 	TypeMarketData            = 0

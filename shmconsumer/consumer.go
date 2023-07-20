@@ -3,6 +3,7 @@ package shmconsumer
 import (
 	"bytes"
 	"fmt"
+	"gitlab-dev.qxinvest.com/gomd/md/shm"
 	"os"
 	"strings"
 	"syscall"
@@ -16,8 +17,8 @@ type Consumer struct {
 	startIndexGroup []uint64 // 用于处理多个 buffer 的情况
 
 	// data 一个 filepath 可能对应多个 bufferinfo; 每个 bufferInfo 对应一个 buffer
-	bufferInfoList []*BufferInfo
-	bufferList     []*Buffer
+	bufferInfoList []*shm.BufferInfo
+	bufferList     []*shm.Buffer
 	cursors        []uint64
 	callback       Callback
 }
@@ -34,39 +35,39 @@ func New(filepath string, opts ...Option) (*Consumer, error) {
 
 	for _, filepath := range filePaths {
 		// 1. 映射 buffer 头信息
-		bufferHeaderSize := int(unsafe.Sizeof(MDGatewayInfo{}))
+		bufferHeaderSize := int(unsafe.Sizeof(shm.MDGatewayInfo{}))
 		b, err := Alloc(filepath, bufferHeaderSize)
 		if err != nil {
 			return nil, err
 		}
 
-		gatewayInfo := *(**MDGatewayInfo)(unsafe.Pointer(&b))
+		gatewayInfo := *(**shm.MDGatewayInfo)(unsafe.Pointer(&b))
 		if gatewayInfo == nil {
 			return nil, fmt.Errorf("error: filepath(%s) gatewayinfo is nil", filepath)
 		}
 
-		bufferNum := gatewayInfo.length
-		bufferInfoSize := unsafe.Sizeof(BufferInfo{})
-		p := uintptr(unsafe.Pointer(&gatewayInfo.bufferInfo))
+		bufferNum := gatewayInfo.Length
+		bufferInfoSize := unsafe.Sizeof(shm.BufferInfo{})
+		p := uintptr(unsafe.Pointer(&gatewayInfo.BufferInfo))
 		for i := int32(0); i < bufferNum; i++ {
-			bufferInfo := *(**BufferInfo)(unsafe.Pointer(&p))
+			bufferInfo := *(**shm.BufferInfo)(unsafe.Pointer(&p))
 			consumer.bufferInfoList = append(consumer.bufferInfoList, bufferInfo)
 			p = p + bufferInfoSize
 		}
 
 		for idx, bufferInfo := range consumer.bufferInfoList {
 			// 2. 根据 bufferInfo 映射 buffer
-			bufferPath := string(bytes.Trim(bufferInfo.hugeFile[:], "\x00"))
+			bufferPath := string(bytes.Trim(bufferInfo.HugeFile[:], "\x00"))
 			if bufferPath == "" {
 				return nil, fmt.Errorf("error: filepath(%s) buffer path is empty", filepath)
 			}
 
-			b, err = Alloc(bufferPath, int(unsafe.Sizeof(Buffer{}))+int(bufferInfo.totalSize))
+			b, err = Alloc(bufferPath, int(unsafe.Sizeof(shm.Buffer{}))+int(bufferInfo.TotalSize))
 			if err != nil {
 				return nil, err
 			}
 
-			buffer := *(**Buffer)(unsafe.Pointer(&b))
+			buffer := *(**shm.Buffer)(unsafe.Pointer(&b))
 			consumer.bufferList = append(consumer.bufferList, buffer)
 
 			// 3. 处理 start index
@@ -74,8 +75,8 @@ func New(filepath string, opts ...Option) (*Consumer, error) {
 			if idx < len(consumer.startIndexGroup) {
 				startIndex = consumer.startIndexGroup[idx]
 			}
-			if startIndex == DefaultConsumerStartIndex || startIndex > buffer.tailIndex {
-				consumer.cursors = append(consumer.cursors, buffer.tailIndex)
+			if startIndex == DefaultConsumerStartIndex || startIndex > buffer.TailIndex {
+				consumer.cursors = append(consumer.cursors, buffer.TailIndex)
 			} else {
 				consumer.cursors = append(consumer.cursors, consumer.startIndex)
 			}
@@ -107,7 +108,7 @@ func (c *Consumer) Run() {
 		for idx, buffer := range c.bufferList {
 			datapoint := buffer.GetNextAddrNoBlock(&c.cursors[idx])
 			if datapoint != nil && c.callback != nil {
-				c.callback(datapoint, buffer.dataType)
+				c.callback(datapoint, buffer.DataType)
 			}
 		}
 	}
