@@ -1,4 +1,4 @@
-package shmconsumer
+package md
 
 import (
 	"encoding/json"

@@ -1,4 +1,4 @@
-package shmconsumer
+package md
 
 import (
 	"gitlab-dev.qxinvest.com/gomd/md/shm"
