@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gitlab-dev.qxinvest.com/gomd/md/datatype"
 	"gitlab-dev.qxinvest.com/gomd/md/shm"
+	"gitlab-dev.qxinvest.com/gomd/md/timescale"
 	"strings"
 	"sync"
 	"unsafe"
@@ -44,15 +45,26 @@ type Consumer struct {
 	transactionChannel      chan *datatype.Transaction
 	orderExtraChannel       chan *datatype.OrderExtra
 	transactionExtraChannel chan *datatype.TransactionExtra
+
+	// 一些辅助功能
+	latestTimestampMtx sync.Mutex
+	latestTimestamp    int64
+
+	latestTiMtx sync.Mutex
+	latestTi    int
+
+	tiCallback TiCallback
 }
 
 func New(filepath string, opts ...Option) (*Consumer, error) {
 	filePaths := strings.Split(filepath, ";")
 	consumer := &Consumer{
-		filePaths:  filePaths,
-		startIndex: DefaultConsumerStartIndex,
-		bufferSize: DefaultBufferSize,
-		stopChan:   make(chan struct{}),
+		filePaths:       filePaths,
+		startIndex:      DefaultConsumerStartIndex,
+		bufferSize:      DefaultBufferSize,
+		stopChan:        make(chan struct{}),
+		latestTimestamp: -1,
+		latestTi:        0,
 	}
 	for _, o := range opts {
 		o(consumer)
@@ -221,6 +233,10 @@ func (c *Consumer) ReadBuffer(buffer *shm.Buffer, currentIndex *uint64) {
 	switch buffer.DataType {
 	case datatype.TypeSnapshot:
 		snapshot := datatype.CopySnapshot(shm.GetSnapshot(datapoint))
+		if snapshot != nil {
+			go c.SetTimestamp(snapshot.TimestampS)
+			go c.CallTimer(snapshot.UpdateTime)
+		}
 		if snapshot != nil && c.snapshotCallback != nil && c.snapshotChannel != nil {
 			c.snapshotChannel <- snapshot
 		}
@@ -299,4 +315,44 @@ func (c *Consumer) Start() {
 
 func (c *Consumer) Stop() {
 	close(c.stopChan)
+}
+
+// 一些辅助性的功能
+
+func (c *Consumer) SetTimestamp(timestamp int64) {
+	c.latestTimestampMtx.Lock()
+	defer c.latestTimestampMtx.Unlock()
+
+	c.latestTimestamp = timestamp
+}
+
+func (c *Consumer) GetTimestamp() int64 {
+	c.latestTimestampMtx.Lock()
+	defer c.latestTimestampMtx.Unlock()
+
+	return c.latestTimestamp
+}
+
+func (c *Consumer) UpdateLatestTi(ti int) bool {
+	c.latestTiMtx.Lock()
+	defer c.latestTiMtx.Unlock()
+
+	if ti > c.latestTi {
+		c.latestTi = ti
+		return true
+	}
+	return false
+}
+
+func (c *Consumer) CallTimer(updateTime string) {
+	ti := timescale.GetTi(updateTime)
+	if ti < 0 {
+		return
+	}
+
+	if c.UpdateLatestTi(ti) { // 如果更新成功，则调用 1 分钟回调
+		if c.tiCallback != nil {
+			c.tiCallback(ti)
+		}
+	}
 }

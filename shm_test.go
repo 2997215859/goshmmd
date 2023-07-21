@@ -6,6 +6,7 @@ import (
 	"gitlab-dev.qxinvest.com/gomd/md/datatype"
 	"gitlab-dev.qxinvest.com/gomd/md/shm"
 	"gitlab-dev.qxinvest.com/gomd/md/shmconsumer"
+	"gitlab-dev.qxinvest.com/gomd/md/timescale"
 	"testing"
 	"time"
 	"unsafe"
@@ -87,6 +88,10 @@ func transactionExtraCallbackTest(transactionExtra *datatype.TransactionExtra) {
 	}
 }
 
+func tiCallbackTest(ti int) {
+	fmt.Printf("ti: %d, time: %s\n", ti, timescale.Ti2Time(ti))
+}
+
 func TestAllConsumer(t *testing.T) {
 	consumer, err := shmconsumer.New("/mnt/huge/ha;/mnt/huge/ha_order_transaction", shmconsumer.WithCallback(CallbackTest))
 	if err != nil {
@@ -135,4 +140,12 @@ func TestStop(t *testing.T) {
 	go consumer.Run()
 	time.Sleep(10 * time.Second)
 	consumer.Stop()
+}
+
+func TestTiCallback(t *testing.T) {
+	consumer, err := shmconsumer.New("/mnt/huge/ha", shmconsumer.WithTiCallback(tiCallbackTest), shmconsumer.WithStart(0))
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
+	consumer.Run()
 }

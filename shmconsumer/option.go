@@ -15,6 +15,8 @@ type TransactionCallback func(trans *datatype.Transaction)
 type OrderExtraCallback func(orderExtra *datatype.OrderExtra)
 type TransactionExtraCallback func(transactionExtra *datatype.TransactionExtra)
 
+type TiCallback func(int)
+
 type Option func(consumer *Consumer)
 
 func WithStart(startIndex uint64) Option {
@@ -61,5 +63,11 @@ func WithOrderExtraCallback(cb OrderExtraCallback) Option {
 func WithTransactionExtraCallback(cb TransactionExtraCallback) Option {
 	return func(consumer *Consumer) {
 		consumer.transactionExtraCallback = cb
+	}
+}
+
+func WithTiCallback(cb TiCallback) Option {
+	return func(consumer *Consumer) {
+		consumer.tiCallback = cb
 	}
 }
