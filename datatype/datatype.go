@@ -1,6 +1,25 @@
 package datatype
 
 const (
+	OrderFuncBuy  = "B"
+	OrderFuncSell = "S"
+	OrderFunKnown = "C"
+)
+
+const (
+	OrderKindMkt = "1" // 市价
+	OrderKindFix = "2" // 限价
+	OrderKindUsf = "U" // 本方最优
+	OrderKindUcf = "Y" // 对手方最优
+	OrderKindUtp = "2" // 即时成交
+)
+
+const (
+	TransactionFuncCancel = "C" // 撤单
+	TransactionFuncTrans  = "0" // 成交
+)
+
+const (
 	TypeSnapshot              = 0
 	TypeOrder                 = 1
 	TypeTransaction           = 2
@@ -58,8 +77,8 @@ type Order struct {
 	Volume       uint32
 
 	ChannelNo    int32
-	OrderKind    byte
-	FunctionCode byte
+	OrderKind    string // 1=市价单   2=限价单   U=best_passive  3=IOC; K=ETF; V=best_5_levels; W=FOK; X=best_passive; Y=best_aggressive
+	FunctionCode string // buy='B'   sell='S'  no 'C'
 
 	InstrumentId string
 	TradingDay   string
@@ -77,12 +96,12 @@ type Transaction struct {
 
 	ChannelNo    int32
 	Index        int32
-	BsFlag       byte
-	FunctionCode byte
+	BsFlag       string // buy='B'   sell='S'    unknown='N'
+	FunctionCode string // fill='F'  cancel='C'
 	IsSzSe       bool
 	InstrumentId string
 	TradingDay   string
-	OrderKind    byte
+	OrderKind    byte // 0
 }
 
 // extra 类型
