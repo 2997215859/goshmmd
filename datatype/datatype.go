@@ -38,6 +38,9 @@ const (
 
 // 正常类型
 
+/*
+snapshot: {"RecordCircle":188064729037483404,"ExchangeTime":91927000,"TimestampS":1690161567,"TimestampNS":131970697,"InstrumentId":"000101.SH","LastPrice":229.4614,"TradingDay":"20230724","ExchangeId":"","OpenPrice":229.4614,"HighestPrice":229.4614,"LowestPrice":229.4614,"PreClosePrice":229.4001,"Volume":0,"Amount":0,"ClosePrice":0,"SettlementPrice":0,"PreSettlementPrice":0,"OpenInterest":0,"AveragePrice":0,"AskPrice":[0,0,0,0,0,0,0,0,0,0],"AskVolume":[0,0,0,0,0,0,0,0,0,0],"BidPrice":[0,0,0,0,0,0,0,0,0,0],"BidVolume":[0,0,0,0,0,0,0,0,0,0],"AverageAskPrice":0,"AverageBidPrice":0,"TotalAskVolume":0,"TotalBidVolume":0,"UpdateTime":"09:19:27","MilliSeconds":0,"UpperLimitPrice":0,"LowerLimitPrice":0,"Iopv":0,"TurnNum":0}
+*/
 type Snapshot struct {
 	RecordCircle       uint64
 	ExchangeTime       int64
