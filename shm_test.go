@@ -117,7 +117,7 @@ func TestSnapshotConsumer(t *testing.T) {
 }
 
 func TestOrderExtraConsumer(t *testing.T) {
-	consumer, err := shmconsumer.New("/mnt/huge/ha_order_transaction", shmconsumer.WithOrderExtraCallback(orderExtraCallbackTest))
+	consumer, err := shmconsumer.New("/mnt/huge/ha_order_transaction", shmconsumer.WithOrderExtraCallback(orderExtraCallbackTest), shmconsumer.WithStart(1000000))
 	if err != nil {
 		t.Errorf("error: %s", err)
 	}
@@ -125,7 +125,7 @@ func TestOrderExtraConsumer(t *testing.T) {
 }
 
 func TestTransactionExtraConsumer(t *testing.T) {
-	consumer, err := shmconsumer.New("/mnt/huge/ha_order_transaction", shmconsumer.WithTransactionExtraCallback(transactionExtraCallbackTest))
+	consumer, err := shmconsumer.New("/mnt/huge/ha_order_transaction", shmconsumer.WithTransactionExtraCallback(transactionExtraCallbackTest), shmconsumer.WithStart(1000000))
 	if err != nil {
 		t.Errorf("error: %s", err)
 	}

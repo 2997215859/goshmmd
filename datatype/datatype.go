@@ -6,13 +6,13 @@ const (
 	OrderFunKnown = "C"
 )
 
-//const (
-//	OrderKindFix = "0" // 限价
-//	OrderKindMkt = "1" // 市价
-//	OrderKindUsf = "U" // 本方最优
-//	OrderKindUcf = "Y" // 对手方最优
-//	OrderKindUtp = "2" // 即时成交
-//)
+const (
+	OrderKindFix = "2" // 限价
+	//OrderKindMkt = "1" // 市价
+	//OrderKindUsf = "U" // 本方最优
+	//OrderKindUcf = "Y" // 对手方最优
+	//OrderKindUtp = "2" // 即时成交
+)
 
 const (
 	TransactionFuncCancel = "C" // 撤单
@@ -74,10 +74,13 @@ type Snapshot struct {
 	TurnNum            float64
 }
 
+/*
+{"Code":2317,"LocalTime":1690161885658230008,"ExchangeTime":92445590,"Order":358031,"Price":17,"Volume":700,"ChannelNo":2013,"OrderKind":"2","FunctionCode":"S","InstrumentId":"002317.SZ","TradingDay":"20230724","OrderNo":0,"BizIndex":0}
+*/
 type Order struct {
 	Code         uint64
-	LocalTime    uint64
-	ExchangeTime uint64
+	LocalTime    uint64 // 1690161885658230008
+	ExchangeTime uint64 // 92445590
 	Order        int64
 	Price        float64
 	Volume       uint32
@@ -90,6 +93,9 @@ type Order struct {
 	TradingDay   string
 }
 
+/*
+transactionExtra: {"Code":2400,"LocalTime":1690162201247357587,"ExchangeTime":93000090,"AskOrder":468957,"BidOrder":439218,"Price":6.05,"Amount":1210,"Volume":200,"ChannelNo":2013,"Index":468958,"BsFlag":"S","FunctionCode":"F","IsSzSe":true,"InstrumentId":"002400.SZ","TradingDay":"20230724","OrderKind":48,"BizIndex":0}
+*/
 type Transaction struct {
 	Code         uint64
 	LocalTime    uint64
