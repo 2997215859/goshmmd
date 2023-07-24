@@ -6,17 +6,23 @@ const (
 	OrderFunKnown = "C"
 )
 
-const (
-	OrderKindMkt = "1" // 市价
-	OrderKindFix = "2" // 限价
-	OrderKindUsf = "U" // 本方最优
-	OrderKindUcf = "Y" // 对手方最优
-	OrderKindUtp = "2" // 即时成交
-)
+//const (
+//	OrderKindFix = "0" // 限价
+//	OrderKindMkt = "1" // 市价
+//	OrderKindUsf = "U" // 本方最优
+//	OrderKindUcf = "Y" // 对手方最优
+//	OrderKindUtp = "2" // 即时成交
+//)
 
 const (
 	TransactionFuncCancel = "C" // 撤单
-	TransactionFuncTrans  = "0" // 成交
+	TransactionFuncTrans  = "F" // 成交
+)
+
+const (
+	TransactionBSFlagBuy     = "B"
+	TransactionBSFlagSell    = "S"
+	TransactionBSFlagUnknown = "N"
 )
 
 const (
