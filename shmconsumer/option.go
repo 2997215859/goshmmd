@@ -71,3 +71,9 @@ func WithTiCallback(cb TiCallback) Option {
 		consumer.tiCallback = cb
 	}
 }
+
+func WithTiSeqCallback(cb TiCallback) Option {
+	return func(consumer *Consumer) {
+		consumer.tiSeqCallback = cb
+	}
+}

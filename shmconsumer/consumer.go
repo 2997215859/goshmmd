@@ -54,6 +54,9 @@ type Consumer struct {
 	latestTi    int
 
 	tiCallback TiCallback
+
+	tiSeqChannel  chan int
+	tiSeqCallback TiCallback
 }
 
 func New(filepath string, opts ...Option) (*Consumer, error) {
@@ -130,9 +133,7 @@ func (c *Consumer) MDCallback() {
 			for {
 				select {
 				case data := <-c.allChannel:
-					if c.callback != nil {
-						c.callback(data.pointer, data.dataType)
-					}
+					c.callback(data.pointer, data.dataType)
 				case <-c.stopChan:
 					return
 				}
@@ -145,9 +146,7 @@ func (c *Consumer) MDCallback() {
 			for {
 				select {
 				case snapshot := <-c.snapshotChannel:
-					if c.snapshotCallback != nil {
-						c.snapshotCallback(snapshot)
-					}
+					c.snapshotCallback(snapshot)
 				case <-c.stopChan:
 					return
 				}
@@ -160,9 +159,7 @@ func (c *Consumer) MDCallback() {
 			for {
 				select {
 				case order := <-c.orderChannel:
-					if c.orderCallback != nil {
-						c.orderCallback(order)
-					}
+					c.orderCallback(order)
 				case <-c.stopChan:
 					return
 				}
@@ -175,9 +172,7 @@ func (c *Consumer) MDCallback() {
 			for {
 				select {
 				case transaction := <-c.transactionChannel:
-					if c.transactionCallback != nil {
-						c.transactionCallback(transaction)
-					}
+					c.transactionCallback(transaction)
 				case <-c.stopChan:
 					return
 				}
@@ -190,9 +185,7 @@ func (c *Consumer) MDCallback() {
 			for {
 				select {
 				case order := <-c.orderExtraChannel:
-					if c.orderExtraCallback != nil {
-						c.orderExtraCallback(order)
-					}
+					c.orderExtraCallback(order)
 				case <-c.stopChan:
 					return
 				}
@@ -206,9 +199,21 @@ func (c *Consumer) MDCallback() {
 			for {
 				select {
 				case transactionExtra := <-c.transactionExtraChannel:
-					if c.transactionExtraCallback != nil {
-						c.transactionExtraCallback(transactionExtra)
-					}
+					c.transactionExtraCallback(transactionExtra)
+				case <-c.stopChan:
+					return
+				}
+			}
+		}()
+	}
+
+	if c.tiSeqCallback != nil {
+		c.tiSeqChannel = make(chan int, 1024)
+		go func() {
+			for {
+				select {
+				case ti := <-c.tiSeqChannel:
+					c.tiSeqCallback(ti)
 				case <-c.stopChan:
 					return
 				}
@@ -235,7 +240,7 @@ func (c *Consumer) ReadBuffer(buffer *shm.Buffer, currentIndex *uint64) {
 		snapshot := datatype.CopySnapshot(shm.GetSnapshot(datapoint))
 		if snapshot != nil {
 			go c.SetTimestamp(snapshot.TimestampS)
-			go c.CallTimer(snapshot.UpdateTime)
+			c.CallTimer(snapshot.UpdateTime)
 		}
 		if snapshot != nil && c.snapshotCallback != nil && c.snapshotChannel != nil {
 			c.snapshotChannel <- snapshot
@@ -352,7 +357,10 @@ func (c *Consumer) CallTimer(updateTime string) {
 
 	if c.UpdateLatestTi(ti) { // 如果更新成功，则调用 1 分钟回调
 		if c.tiCallback != nil {
-			c.tiCallback(ti)
+			go c.tiCallback(ti)
+		}
+		if c.tiSeqCallback != nil {
+			c.tiSeqChannel <- ti
 		}
 	}
 }
