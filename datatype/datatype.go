@@ -7,11 +7,12 @@ const (
 )
 
 const (
+	OrderKindMkt = "1" // 市价
 	OrderKindFix = "2" // 限价
-	//OrderKindMkt = "1" // 市价
-	//OrderKindUsf = "U" // 本方最优
-	//OrderKindUcf = "Y" // 对手方最优
-	//OrderKindUtp = "2" // 即时成交
+
+	OrderKindUsf = "U" // 本方最优
+	OrderKindUcf = "Y" // 对手方最优
+	OrderKindUtp = "2" // 即时成交
 )
 
 const (
