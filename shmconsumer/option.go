@@ -2,6 +2,7 @@ package shmconsumer
 
 import (
 	"gitlab-dev.qxinvest.com/gomd/md/datatype"
+	"gitlab-dev.qxinvest.com/gomd/md/timescale"
 	"math"
 	"unsafe"
 )
@@ -75,5 +76,11 @@ func WithTiCallback(cb TiCallback) Option {
 func WithTiSeqCallback(cb TiCallback) Option {
 	return func(consumer *Consumer) {
 		consumer.tiSeqCallback = cb
+	}
+}
+
+func WithTimescale(scale timescale.TimeScale) Option {
+	return func(consumer *Consumer) {
+		consumer.timescale = &scale
 	}
 }

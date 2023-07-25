@@ -57,6 +57,8 @@ type Consumer struct {
 
 	tiSeqChannel  chan int
 	tiSeqCallback TiCallback
+
+	timescale *timescale.TimeScale
 }
 
 func New(filepath string, opts ...Option) (*Consumer, error) {
@@ -68,6 +70,7 @@ func New(filepath string, opts ...Option) (*Consumer, error) {
 		stopChan:        make(chan struct{}),
 		latestTimestamp: -1,
 		latestTi:        0,
+		timescale:       timescale.DefaultTimeScale,
 	}
 	for _, o := range opts {
 		o(consumer)
@@ -350,7 +353,8 @@ func (c *Consumer) UpdateLatestTi(ti int) bool {
 }
 
 func (c *Consumer) CallTimer(updateTime string) {
-	ti := timescale.GetTi(updateTime)
+	ti := c.timescale.GetTi(updateTime)
+
 	if ti < 0 {
 		return
 	}

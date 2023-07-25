@@ -14,6 +14,8 @@ type TimeScale struct {
 	MinuteSize int
 }
 
+var DefaultTimeScale = NewTimeScale("09:30:00", "15:00:00", 60)
+
 func NewTimeScale(startTime, endTime string, scale int) *TimeScale {
 	date := carbon.Now().ToDateString()
 	startTime = date + " " + startTime
