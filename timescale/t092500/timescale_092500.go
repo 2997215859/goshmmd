@@ -2,7 +2,6 @@ package t092500
 
 import (
 	"gitlab-dev.qxinvest.com/gomd/md/timescale"
-	"sort"
 )
 
 var Minute1 = []string{
@@ -255,7 +254,9 @@ var Minute1 = []string{
 	"15:00:00",
 }
 
-var MinuteSize = len(Minute1)
+var scale = timescale.NewTimeScale("09:25:00", "15:00:00", 60)
+
+var MinuteSize = scale.MinuteSize
 
 // 08:00:00 => 0
 // 09:25:xx => 1
@@ -275,14 +276,7 @@ var MinuteSize = len(Minute1)
 // 13:00:xx => 126
 
 func GetTi(timestr string) int {
-	if len(timestr) != 8 {
-		return -1
-	}
-	idx := sort.Search(timescale.MinuteSize, func(i int) bool { return Minute1[i] > timestr })
-	if idx == MinuteSize {
-		return -1
-	}
-	return idx
+	return scale.GetTi(timestr)
 }
 
 // 0 => ""
@@ -296,9 +290,5 @@ func GetTi(timestr string) int {
 // 8 => 09:32:00
 // 125 => 11:29:00
 func Ti2Time(ti int) string {
-	ti--
-	if ti < 0 || ti >= MinuteSize {
-		return ""
-	}
-	return Minute1[ti]
+	return scale.Ti2Time(ti)
 }

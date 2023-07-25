@@ -1,9 +1,5 @@
 package timescale
 
-import (
-	"sort"
-)
-
 var Minute1 = []string{
 	// timescale = 第 0 个截面, [-, 09:25:00)
 	"09:30:00", // timescale = 第 1 个截面, [09:30:00, 09:31:00)
@@ -249,6 +245,8 @@ var Minute1 = []string{
 	"15:00:00",
 }
 
+var DefaultTimeScale = NewTimeScale("09:30:00", "15:00:00", 60)
+
 var MinuteSize = DefaultTimeScale.MinuteSize
 
 // 08:00:00 => 0
@@ -264,14 +262,7 @@ var MinuteSize = DefaultTimeScale.MinuteSize
 // 13:00:xx => 121
 
 func GetTi(timestr string) int {
-	if len(timestr) != 8 {
-		return -1
-	}
-	idx := sort.Search(MinuteSize, func(i int) bool { return Minute1[i] > timestr })
-	if idx == MinuteSize {
-		return -1
-	}
-	return idx
+	return DefaultTimeScale.GetTi(timestr)
 }
 
 // 0 => ""
@@ -280,9 +271,5 @@ func GetTi(timestr string) int {
 // 3 => 09:32:00
 // 120 => 11:29:00
 func Ti2Time(ti int) string {
-	ti--
-	if ti < 0 || ti >= MinuteSize {
-		return ""
-	}
-	return Minute1[ti]
+	return DefaultTimeScale.Ti2Time(ti)
 }
