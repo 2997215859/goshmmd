@@ -318,6 +318,7 @@ func IntTime2Time(timeInt int) string {
 	if len(timestr) == 8 || len(timestr) == 5 {
 		timestr = "0" + timestr
 	}
+
 	if len(timestr) == 9 {
 		timestr = timestr[0:6]
 	}
