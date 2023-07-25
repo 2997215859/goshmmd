@@ -2,18 +2,12 @@ package timescale
 
 import (
 	"sort"
-	"strconv"
 )
 
-var minute1 = []string{
+var Minute1 = []string{
 	// timescale = 第 0 个截面, [-, 09:25:00)
-	"09:25:00", // timescale = 第 1 个截面, [09:25:00, 09:26:00)
-	"09:26:00", // timescale = 第 2 个截面, [09:26:00, 09:27:00)
-	"09:27:00", // timescale = 第 3 个截面, [09:27:00, 09:28:00)
-	"09:28:00", // timescale = 第 4 个截面, [09:28:00, 09:29:00)
-	"09:29:00", // timescale = 第 5 个截面, [09:29:00, 09:30:00)
-	"09:30:00", // timescale = 第 6 个截面, [09:30:00, 09:31:00)
-	"09:31:00", // timescale = 第 7 个截面, [09:31:00, 09:32:00)
+	"09:30:00", // timescale = 第 1 个截面, [09:30:00, 09:31:00)
+	"09:31:00", // timescale = 第 2 个截面, [09:31:00, 09:32:00)
 	"09:32:00",
 	"09:33:00",
 	"09:34:00",
@@ -131,8 +125,8 @@ var minute1 = []string{
 	"11:26:00",
 	"11:27:00",
 	"11:28:00",
-	"11:29:00", // timescale = 第 125 个截面, [11:29:00, 11:30:00)
-	"13:00:00", // timescale = 第 126 个截面, [13:00:00, 13:01:00)
+	"11:29:00", // timescale = 第 120 个截面, [11:29:00, 11:30:00)
+	"13:00:00", // timescale = 第 121 个截面, [13:00:00, 13:01:00)
 	"13:01:00",
 	"13:02:00",
 	"13:03:00",
@@ -250,80 +244,45 @@ var minute1 = []string{
 	"14:55:00",
 	"14:56:00",
 	"14:57:00",
-	"14:58:00", // timescale = 第 244 个截面, [14:58:00, 14:59:00)
+	"14:58:00", // timescale = 第 239 个截面, [14:58:00, 14:59:00)
 	"14:59:00",
 	"15:00:00",
 }
 
-var Minute1Size = len(minute1)
+var MinuteSize = DefaultTimeScale.MinuteSize
 
 // 08:00:00 => 0
-// 09:25:xx => 1
-// 09:26:xx => 2
-// 09:27:xx => 3
-// 09:28:xx => 4
-// 09:29:xx => 5
-// 09:30:xx => 6
-// 09:31:xx => 7
-// 11:29:xx => 125
+// 09:30:xx => 1
+// 09:31:xx => 2
+// 11:29:xx => 120
 
 // 11:30:00 => 行情不会进来
 // 11:30:xx => 行情不会进来
 // 11:31:xx => 行情不会进来
 // 12:59:xx => 行情不会进来
 
-// 13:00:xx => 126
+// 13:00:xx => 121
 
 func GetTi(timestr string) int {
 	if len(timestr) != 8 {
 		return -1
 	}
-	idx := sort.Search(Minute1Size, func(i int) bool { return minute1[i] > timestr })
-	if idx == Minute1Size {
+	idx := sort.Search(MinuteSize, func(i int) bool { return Minute1[i] > timestr })
+	if idx == MinuteSize {
 		return -1
 	}
 	return idx
 }
 
 // 0 => ""
-// 1 => 09:25:00
-// 2 => 09:26:00
-// 3 => 09:27:00
-// 4 => 09:28:00
-// 5 => 09:29:00
-// 6 => 09:30:00
-// 7 => 09:31:00
-// 8 => 09:32:00
-// 125 => 11:29:00
+// 1 => 09:30:00
+// 2 => 09:31:00
+// 3 => 09:32:00
+// 120 => 11:29:00
 func Ti2Time(ti int) string {
 	ti--
-	if ti < 0 || ti >= Minute1Size {
+	if ti < 0 || ti >= MinuteSize {
 		return ""
 	}
-	return minute1[ti]
-}
-
-func TiList2TimeList(list []int) []string {
-	res := make([]string, 0)
-	for _, ti := range list {
-		res = append(res, Ti2Time(ti))
-	}
-	return res
-}
-
-// 91503190 => 09:15:03
-// 91503 => 09:15:03
-func IntTime2Time(timeInt int) string {
-	timestr := strconv.Itoa(timeInt)
-	if len(timestr) == 8 || len(timestr) == 5 {
-		timestr = "0" + timestr
-	}
-
-	if len(timestr) == 9 {
-		timestr = timestr[0:6]
-	}
-	if len(timestr) != 6 {
-		return ""
-	}
-	return timestr[0:2] + ":" + timestr[2:4] + ":" + timestr[4:6]
+	return Minute1[ti]
 }

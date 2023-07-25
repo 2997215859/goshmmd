@@ -6,7 +6,7 @@ import (
 	"gitlab-dev.qxinvest.com/gomd/md/datatype"
 	"gitlab-dev.qxinvest.com/gomd/md/shm"
 	"gitlab-dev.qxinvest.com/gomd/md/shmconsumer"
-	"gitlab-dev.qxinvest.com/gomd/md/timescale"
+	"gitlab-dev.qxinvest.com/gomd/md/timescale/t092500"
 	"testing"
 	"time"
 	"unsafe"
@@ -89,7 +89,7 @@ func transactionExtraCallbackTest(transactionExtra *datatype.TransactionExtra) {
 }
 
 func tiCallbackTest(ti int) {
-	fmt.Printf("ti: %d, time: %s\n", ti, timescale.Ti2Time(ti))
+	fmt.Printf("ti: %d, time: %s\n", ti, t092500.Ti2Time(ti))
 }
 
 func TestAllConsumer(t *testing.T) {

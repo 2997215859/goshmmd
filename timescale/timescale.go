@@ -34,6 +34,7 @@ func NewTimeScale(startTime, endTime string, scale int) *TimeScale {
 		if timestr >= "11:30:00" && timestr < "13:00:00" {
 			continue
 		}
+
 		timescale.Minutes = append(timescale.Minutes, timestr)
 	}
 	timescale.MinuteSize = len(timescale.Minutes)
