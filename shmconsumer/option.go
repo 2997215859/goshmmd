@@ -26,6 +26,12 @@ func WithStart(startIndex uint64) Option {
 	}
 }
 
+func WithStarts(starts []uint64) Option {
+	return func(consumer *Consumer) {
+		consumer.startIndexGroup = starts
+	}
+}
+
 func WithBufferSize(bufferSize uint64) Option {
 	return func(consumer *Consumer) {
 		consumer.bufferSize = bufferSize

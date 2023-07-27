@@ -167,3 +167,22 @@ func TestOneStockCallback(t *testing.T) {
 	}
 	consumer.Run()
 }
+
+func OneStockOrderCallback(order *datatype.OrderExtra) {
+	if order.InstrumentId == "002057.SZ" {
+		//b, _ := json.Marshal(snapshot)
+		fmt.Printf("order_extra: %v\n", order.ExchangeTime)
+	}
+}
+
+func TestOneStockOrderCallback(t *testing.T) {
+	consumer, err := shmconsumer.New(
+		"/mnt/huge/ha;/mnt/huge/ha_order_transaction",
+		shmconsumer.WithOrderExtraCallback(OneStockOrderCallback),
+		shmconsumer.WithStart(23800000),
+	)
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
+	consumer.Run()
+}
