@@ -92,13 +92,15 @@ func New(filepath string, opts ...Option) (*Consumer, error) {
 		bufferNum := gatewayInfo.Length
 		bufferInfoSize := unsafe.Sizeof(shm.BufferInfo{})
 		p := uintptr(unsafe.Pointer(&gatewayInfo.BufferInfo))
+		var bufferInfoList []*shm.BufferInfo
 		for i := int32(0); i < bufferNum; i++ {
 			bufferInfo := *(**shm.BufferInfo)(unsafe.Pointer(&p))
 			consumer.bufferInfoList = append(consumer.bufferInfoList, bufferInfo)
+			bufferInfoList = append(bufferInfoList, bufferInfo)
 			p = p + bufferInfoSize
 		}
 
-		for idx, bufferInfo := range consumer.bufferInfoList {
+		for idx, bufferInfo := range bufferInfoList {
 			// 2. 根据 bufferInfo 映射 buffer
 			bufferPath := string(bytes.Trim(bufferInfo.HugeFile[:], "\x00"))
 			if bufferPath == "" {

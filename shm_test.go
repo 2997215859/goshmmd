@@ -149,3 +149,21 @@ func TestTiCallback(t *testing.T) {
 	}
 	consumer.Run()
 }
+
+func OneStockCallback(snapshot *datatype.Snapshot) {
+	if snapshot.InstrumentId == "002057.SZ" {
+		//b, _ := json.Marshal(snapshot)
+		fmt.Printf("snapshot: %s\n", snapshot.UpdateTime)
+	}
+}
+
+func TestOneStockCallback(t *testing.T) {
+	consumer, err := shmconsumer.New(
+		"/mnt/huge/ha;/mnt/huge/ha_order_transaction",
+		shmconsumer.WithSnapshotCallback(OneStockCallback),
+	)
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
+	consumer.Run()
+}
