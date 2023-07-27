@@ -22,7 +22,7 @@ type Consumer struct {
 	// config
 	filePaths       []string
 	startIndex      uint64
-	startIndexGroup []uint64 // 用于处理多个 buffer 的情况
+	startIndexGroup [][]uint64 // 用于处理多个 buffer 的情况
 	bufferSize      uint64
 
 	// data 一个 filepath 可能对应多个 bufferinfo; 每个 bufferInfo 对应一个 buffer
@@ -76,7 +76,7 @@ func New(filepath string, opts ...Option) (*Consumer, error) {
 		o(consumer)
 	}
 
-	for _, filepath := range filePaths {
+	for fi, filepath := range filePaths {
 		// 1. 映射 buffer 头信息
 		bufferHeaderSize := int(unsafe.Sizeof(shm.MDGatewayInfo{}))
 		b, err := shm.Alloc(filepath, bufferHeaderSize)
@@ -117,8 +117,9 @@ func New(filepath string, opts ...Option) (*Consumer, error) {
 
 			// 3. 处理 start index
 			startIndex := consumer.startIndex
-			if idx < len(consumer.startIndexGroup) {
-				startIndex = consumer.startIndexGroup[idx]
+
+			if fi < len(consumer.startIndexGroup) && idx < len(consumer.startIndexGroup[fi]) {
+				startIndex = consumer.startIndexGroup[fi][idx]
 			}
 			if startIndex == DefaultConsumerStartIndex || startIndex > buffer.TailIndex {
 				consumer.cursors = append(consumer.cursors, buffer.TailIndex)
