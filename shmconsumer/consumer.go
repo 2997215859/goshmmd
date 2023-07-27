@@ -124,7 +124,7 @@ func New(filepath string, opts ...Option) (*Consumer, error) {
 			if startIndex == DefaultConsumerStartIndex || startIndex > buffer.TailIndex {
 				consumer.cursors = append(consumer.cursors, buffer.TailIndex)
 			} else {
-				consumer.cursors = append(consumer.cursors, consumer.startIndex)
+				consumer.cursors = append(consumer.cursors, startIndex)
 			}
 		}
 	}

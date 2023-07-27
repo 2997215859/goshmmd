@@ -179,7 +179,7 @@ func TestOneStockOrderCallback(t *testing.T) {
 	consumer, err := shmconsumer.New(
 		"/mnt/huge/ha;/mnt/huge/ha_order_transaction",
 		shmconsumer.WithOrderExtraCallback(OneStockOrderCallback),
-		shmconsumer.WithStart(23800000),
+		shmconsumer.WithStarts([][]uint64{{23800000}, {33800000}}),
 	)
 	if err != nil {
 		t.Errorf("error: %s", err)
