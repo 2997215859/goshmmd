@@ -12,7 +12,7 @@ const (
 
 	OrderKindUsf = "U" // 本方最优
 	OrderKindUcf = "Y" // 对手方最优
-	OrderKindUtp = "2" // 即时成交
+	//OrderKindUtp = "2" // 即时成交
 )
 
 const (
