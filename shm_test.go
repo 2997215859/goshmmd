@@ -117,7 +117,7 @@ func TestSnapshotConsumer(t *testing.T) {
 }
 
 func TestOrderExtraConsumer(t *testing.T) {
-	consumer, err := shmconsumer.New("/mnt/huge/ha_order_transaction", shmconsumer.WithOrderExtraCallback(orderExtraCallbackTest), shmconsumer.WithStart(1000000))
+	consumer, err := shmconsumer.New("/mnt/huge/ha_order_transaction", shmconsumer.WithOrderExtraCallback(orderExtraCallbackTest), shmconsumer.WithStart(0))
 	if err != nil {
 		t.Errorf("error: %s", err)
 	}
@@ -180,6 +180,21 @@ func TestOneStockOrderCallback(t *testing.T) {
 		"/mnt/huge/ha;/mnt/huge/ha_order_transaction",
 		shmconsumer.WithOrderExtraCallback(OneStockOrderCallback),
 		shmconsumer.WithStarts([][]uint64{{23800000}, {33800000}}),
+	)
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
+	consumer.Run()
+}
+
+func TestStartMinutesCallback(t *testing.T) {
+	consumer, err := shmconsumer.New(
+		"/mnt/huge/ha;/mnt/huge/ha_order_transaction",
+		shmconsumer.WithSnapshotCallback(SnapshotCallbackTest),
+		shmconsumer.WithOrderExtraCallback(orderExtraCallbackTest),
+		shmconsumer.WithTransactionExtraCallback(transactionExtraCallbackTest),
+		shmconsumer.WithStartMinute("10:19:00"),
+		//shmconsumer.WithStartMinutes([][]string{{"10:19:30"}, {"10:19:30"}}),
 	)
 	if err != nil {
 		t.Errorf("error: %s", err)

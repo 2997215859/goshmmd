@@ -6,6 +6,7 @@ import (
 	"gitlab-dev.qxinvest.com/gomd/md/datatype"
 	"gitlab-dev.qxinvest.com/gomd/md/shm"
 	"gitlab-dev.qxinvest.com/gomd/md/timescale"
+	"sort"
 	"strings"
 	"sync"
 	"unsafe"
@@ -23,6 +24,8 @@ type Consumer struct {
 	filePaths       []string
 	startIndex      uint64
 	startIndexGroup [][]uint64 // 用于处理多个 buffer 的情况
+	startMinute     string
+	startMinutes    [][]string // 用于处理多个 buffer 的情况
 	bufferSize      uint64
 
 	// data 一个 filepath 可能对应多个 bufferinfo; 每个 bufferInfo 对应一个 buffer
@@ -117,10 +120,22 @@ func New(filepath string, opts ...Option) (*Consumer, error) {
 
 			// 3. 处理 start index
 			startIndex := consumer.startIndex
-
+			// 先判断有没有 indexGroup
 			if fi < len(consumer.startIndexGroup) && idx < len(consumer.startIndexGroup[fi]) {
 				startIndex = consumer.startIndexGroup[fi][idx]
 			}
+
+			// 判断有没有 minutes
+			if consumer.startMinute != "" {
+				startIndex = FindIndex(consumer.startMinute, buffer)
+			}
+
+			if fi < len(consumer.startMinutes) && idx < len(consumer.startMinutes[fi]) {
+				startMinute := consumer.startMinutes[fi][idx]
+				// 根据 startMinute 二分查找 index
+				startIndex = FindIndex(startMinute, buffer)
+			}
+
 			if startIndex == DefaultConsumerStartIndex || startIndex > buffer.TailIndex {
 				consumer.cursors = append(consumer.cursors, buffer.TailIndex)
 			} else {
@@ -130,6 +145,82 @@ func New(filepath string, opts ...Option) (*Consumer, error) {
 	}
 
 	return consumer, nil
+}
+
+// 寻找 >= minute 的第一个 index
+func FindIndex(minute string, buffer *shm.Buffer) uint64 {
+	tailIdx := int(buffer.TailIndex)
+	find := sort.Search(tailIdx+1, func(i int) bool {
+		idx := uint64(i)
+		datapoint := buffer.GetNextAddrNoBlock(&idx)
+		if datapoint == nil {
+			return false
+		}
+		switch buffer.DataType {
+		case datatype.TypeSnapshot:
+			snapshot := shm.GetSnapshot(datapoint)
+			if snapshot == nil {
+				return false
+			}
+			updateTime := string(snapshot.UpdateTime[:])
+			return updateTime >= minute
+		case datatype.TypeOrder:
+			order := shm.GetOrder(datapoint)
+			if order == nil {
+				return false
+			}
+			exchangeTime := timescale.IntTime2Time(int(order.ExchangeTime))
+			return exchangeTime >= minute
+		case datatype.TypeTransaction:
+			trans := shm.GetTransaction(datapoint)
+			if trans == nil {
+				return false
+			}
+			exchangeTime := timescale.IntTime2Time(int(trans.ExchangeTime))
+			return exchangeTime >= minute
+		case datatype.TypeOrderTransaction:
+			bufferType := shm.GetBufferType(datapoint)
+			switch bufferType {
+			case datatype.TypeOrder:
+				order := shm.GetUnionOrder(datapoint)
+				if order == nil {
+					return false
+				}
+				exchangeTime := timescale.IntTime2Time(int(order.ExchangeTime))
+				return exchangeTime >= minute
+			case datatype.TypeTransaction:
+				transaction := shm.GetUnionTransaction(datapoint)
+				if transaction == nil {
+					return false
+				}
+				exchangeTime := timescale.IntTime2Time(int(transaction.ExchangeTime))
+				return exchangeTime >= minute
+			}
+		case datatype.TypeOrderTransactionExtra:
+			bufferType := shm.GetBufferType(datapoint)
+			switch bufferType {
+			case datatype.TypeOrderExtra:
+				orderExtra := shm.GetUnionOrderExtra(datapoint)
+				if orderExtra == nil {
+					return false
+				}
+				exchangeTime := timescale.IntTime2Time(int(orderExtra.ExchangeTime))
+				return exchangeTime >= minute
+			case datatype.TypeTransactionExtra:
+				transactionExtra := shm.GetUnionTransactionExtra(datapoint)
+				if transactionExtra == nil {
+					return false
+				}
+				exchangeTime := timescale.IntTime2Time(int(transactionExtra.ExchangeTime))
+				return exchangeTime >= minute
+			}
+		}
+		return false
+	})
+	if find == tailIdx+1 {
+		return DefaultConsumerStartIndex
+	}
+	return uint64(find)
 }
 
 func (c *Consumer) MDCallback() {

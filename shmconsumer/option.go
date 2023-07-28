@@ -32,6 +32,18 @@ func WithStarts(starts [][]uint64) Option {
 	}
 }
 
+func WithStartMinute(startMinute string) Option {
+	return func(consumer *Consumer) {
+		consumer.startMinute = startMinute
+	}
+}
+
+func WithStartMinutes(startMinutes [][]string) Option {
+	return func(consumer *Consumer) {
+		consumer.startMinutes = startMinutes
+	}
+}
+
 func WithBufferSize(bufferSize uint64) Option {
 	return func(consumer *Consumer) {
 		consumer.bufferSize = bufferSize
